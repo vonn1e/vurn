@@ -3,6 +3,7 @@
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { AsciiArt } from "@/components/ui/test";
 
 const money = (n: number) =>
   n.toLocaleString("en-US", {
@@ -10,6 +11,49 @@ const money = (n: number) =>
     currency: "USD",
     maximumFractionDigits: 2,
   });
+
+// Smoothly animates toward the latest live value whenever Convex pushes an update.
+function CountUp({
+  value,
+  format,
+}: {
+  value: number;
+  format?: (n: number) => string;
+}) {
+  const [display, setDisplay] = useState(value);
+  const prevTarget = useRef(value);
+
+  useEffect(() => {
+    if (value === prevTarget.current) return;
+    const from = prevTarget.current;
+    prevTarget.current = value;
+    const duration = 700;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(from + (value - from) * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    // rAF is throttled in hidden/occluded tabs — always settle on the target.
+    const settle = setTimeout(() => {
+      cancelAnimationFrame(raf);
+      setDisplay(value);
+    }, duration + 150);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(settle);
+    };
+  }, [value]);
+
+  return (
+    <span className="tabular-nums">
+      {format ? format(display) : Math.round(display).toLocaleString("en-US")}
+    </span>
+  );
+}
 
 function LiveCell({ value }: { value: number }) {
   const prev = useRef(value);
@@ -65,7 +109,7 @@ function SimulateSaleButton() {
       <button
         onClick={simulate}
         disabled={busy}
-        className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400 disabled:opacity-50"
+        className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:shadow-emerald-400/30 disabled:opacity-50"
       >
         {busy ? "Recording…" : "💸 Simulate sale"}
       </button>
@@ -78,38 +122,62 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-1 text-sm text-white/50">
-            Every video, priced. Clicks tick up live — try tapping a Smart Link
-            on your phone.
-          </p>
-        </div>
-        <SimulateSaleButton />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "Link clicks", value: stats?.totals.clicks ?? 0 },
-          { label: "Sales", value: stats?.totals.sales ?? 0 },
-          { label: "Revenue", value: stats ? money(stats.totals.revenue) : "—" },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4"
-          >
-            <p className="text-xs font-medium uppercase tracking-wide text-white/40">
-              {card.label}
-            </p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-300">
-              {typeof card.value === "number"
-                ? card.value.toLocaleString("en-US")
-                : card.value}
-            </p>
+      {/* Hero: live totals over the ASCII signal. The video is desaturated and
+          re-colorized emerald by the blend overlay so it always matches the app. */}
+      <section className="relative overflow-hidden rounded-2xl border border-white/10">
+        <AsciiArt className="absolute inset-0 opacity-25 saturate-0" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-emerald-400 mix-blend-color"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b0e13]/30 via-[#0b0e13]/60 to-[#0b0e13]"
+        />
+        <div className="relative p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+              <p className="mt-1 text-sm text-white/60">
+                Every video, priced. Clicks tick up live — try tapping a Smart
+                Link on your phone.
+              </p>
+            </div>
+            <SimulateSaleButton />
           </div>
-        ))}
-      </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              {
+                label: "Link clicks",
+                node: <CountUp value={stats?.totals.clicks ?? 0} />,
+              },
+              {
+                label: "Sales",
+                node: <CountUp value={stats?.totals.sales ?? 0} />,
+              },
+              {
+                label: "Revenue",
+                node: (
+                  <CountUp value={stats?.totals.revenue ?? 0} format={money} />
+                ),
+              },
+            ].map((card) => (
+              <div
+                key={card.label}
+                className="rounded-xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-sm transition-colors hover:border-emerald-400/30"
+              >
+                <p className="text-xs font-medium uppercase tracking-wide text-white/40">
+                  {card.label}
+                </p>
+                <p className="mt-1 text-2xl font-bold text-emerald-300">
+                  {card.node}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div className="overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-sm">

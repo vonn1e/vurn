@@ -3,6 +3,7 @@
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Fragment } from "react";
+import { AsciiArt } from "@/components/ui/test";
 
 const money = (n: number) =>
   n.toLocaleString("en-US", {
@@ -36,9 +37,20 @@ export default function MoneyPathPage() {
         <p className="text-sm text-white/40">Loading journeys…</p>
       )}
       {journeys?.length === 0 && (
-        <div className="rounded-xl border border-dashed border-white/15 px-6 py-12 text-center text-sm text-white/40">
-          No journeys yet. Click a Smart Link, then hit “Simulate sale” on the
-          dashboard — a path will draw itself here.
+        <div className="relative overflow-hidden rounded-xl border border-dashed border-white/15">
+          <AsciiArt className="absolute inset-0 opacity-15 saturate-0" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-emerald-400 mix-blend-color"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b0e13]/50 via-[#0b0e13]/70 to-[#0b0e13]/90"
+          />
+          <p className="relative px-6 py-14 text-center text-sm text-white/50">
+            No journeys yet. Click a Smart Link, then hit “Simulate sale” on
+            the dashboard — a path will draw itself here.
+          </p>
         </div>
       )}
 
