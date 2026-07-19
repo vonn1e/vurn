@@ -17,8 +17,23 @@ export async function GET(
     visitorId,
   });
 
-  const response = destinationUrl
-    ? NextResponse.redirect(destinationUrl, 302)
+  // Stripe Payment Links accept client_reference_id and echo it back in the
+  // checkout webhook — that's how a sale stitches to this exact visitor.
+  let target = destinationUrl;
+  if (target) {
+    try {
+      const url = new URL(target);
+      if (url.hostname === "buy.stripe.com") {
+        url.searchParams.set("client_reference_id", visitorId);
+        target = url.toString();
+      }
+    } catch {
+      // Leave the destination untouched if it isn't a valid URL.
+    }
+  }
+
+  const response = target
+    ? NextResponse.redirect(target, 302)
     : NextResponse.redirect(new URL("/links", request.url), 302);
 
   response.cookies.set(VISITOR_COOKIE, visitorId, {

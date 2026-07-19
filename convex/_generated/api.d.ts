@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as dashboard from "../dashboard.js";
 import type * as journeys from "../journeys.js";
 import type * as links from "../links.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   dashboard: typeof dashboard;
   journeys: typeof journeys;
   links: typeof links;

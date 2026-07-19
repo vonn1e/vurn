@@ -14,8 +14,9 @@ revenue land on a video, and watch a Money Path draw itself.
 
 ## Mechanics
 
-- `GET /go/[slug]` logs `{linkId, visitorId (cookie), timestamp}` to Convex and 302-redirects to the destination.
-- `POST /api/sale` takes `{email, amount, visitorId?}` — this endpoint later becomes the Stripe webhook. If `visitorId` is omitted (the simulate button does this), the sale attaches to the most recent clicker, so the phone-tap → laptop-sale demo just works.
+- `GET /go/[slug]` logs `{linkId, visitorId (cookie), timestamp}` to Convex and 302-redirects to the destination. If the destination is a Stripe Payment Link (`buy.stripe.com`), the visitor id rides along as `client_reference_id`.
+- `POST /api/sale` takes `{email, amount, visitorId?}` — the manual/simulated sale endpoint. If `visitorId` is omitted (the simulate button does this), the sale attaches to the most recent clicker, so the phone-tap → laptop-sale demo just works.
+- `POST /api/webhooks/stripe` — the real thing. Verifies the `stripe-signature` header, handles `checkout.session.completed`, and records the sale stitched to the `client_reference_id` visitor.
 - Journeys are stitched by matching a sale's email to its visitor's ordered click trail (`convex/journeys.ts`).
 - Live updates are Convex reactive queries — zero polling code.
 
@@ -37,6 +38,14 @@ That starts Next.js (`localhost:3000`) and a local anonymous Convex deployment
 3. Watch the click counter tick up live.
 4. Press **💸 Simulate sale** → revenue appears on that video.
 5. Open Money Path → the buyer's trail has drawn itself.
+
+## Stripe test-mode setup (real fake money)
+
+1. In Stripe (test mode/sandbox): create a product + price, then a **Payment Link** for it.
+2. Create a Smart Link whose destination is that `buy.stripe.com` URL.
+3. Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`, event `checkout.session.completed`.
+4. Copy the signing secret (`whsec_…`) into the `STRIPE_WEBHOOK_SECRET` env var (Vercel project settings, and `.env.local` for local dev), then redeploy.
+5. Tap the Smart Link, pay with test card `4242 4242 4242 4242` (any expiry/CVC/ZIP). The sale lands in seconds, attributed to the video that sent it.
 
 ## Explicitly not in V1 (per PRD §12)
 
