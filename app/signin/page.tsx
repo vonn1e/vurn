@@ -2,6 +2,7 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
+import { ConvexError } from "convex/values";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -15,6 +16,7 @@ export default function SignInPage() {
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -27,14 +29,18 @@ export default function SignInPage() {
     setError(null);
     setBusy(true);
     try {
-      await signIn("password", { email, password, flow });
+      await signIn("password", { email, password, flow, inviteCode });
       router.replace("/dashboard");
-    } catch {
-      setError(
-        flow === "signIn"
-          ? "That email and password didn't match. New here? Switch to create an account."
-          : "Couldn't create the account — passwords need 8+ characters, and the email may already be registered.",
-      );
+    } catch (e) {
+      if (e instanceof ConvexError && e.data === "invalid-invite-code") {
+        setError("That invite code isn't right. Beta invites come from the founder — reply to your invite email if you lost yours.");
+      } else {
+        setError(
+          flow === "signIn"
+            ? "That email and password didn't match. New here? Switch to create an account."
+            : "Couldn't create the account — passwords need 8+ characters, and the email may already be registered.",
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -92,6 +98,16 @@ export default function SignInPage() {
               placeholder="Password (8+ characters)"
               className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-emerald-400/60"
             />
+            {flow === "signUp" && (
+              <input
+                type="text"
+                required
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Invite code"
+                className="w-full rounded-lg border border-emerald-400/25 bg-black/40 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-emerald-400/60"
+              />
+            )}
             {error && <p className="text-xs text-rose-400">{error}</p>}
             <button
               type="submit"
