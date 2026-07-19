@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 type Step =
   | {
@@ -14,6 +15,7 @@ type Step =
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    if (!(await getAuthUserId(ctx))) throw new Error("Not authenticated");
     const sales = await ctx.db.query("sales").order("desc").collect();
     const links = await ctx.db.query("links").collect();
     const linkById = new Map(links.map((l) => [l._id, l]));

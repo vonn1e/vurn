@@ -6,6 +6,13 @@ import {
   query,
 } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
+
+async function requireAuth(ctx: { auth: import("convex/server").Auth }) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) throw new Error("Not authenticated");
+  return userId;
+}
 
 const SLUG_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 
@@ -23,6 +30,7 @@ export const create = mutation({
     destinationUrl: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     let slug = randomSlug();
     while (
       await ctx.db
@@ -77,6 +85,7 @@ export const setVideoTitle = internalMutation({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAuth(ctx);
     const links = await ctx.db.query("links").order("desc").collect();
     return Promise.all(
       links.map(async (link) => {

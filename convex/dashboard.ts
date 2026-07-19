@@ -1,10 +1,12 @@
 import { query } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 // One row per video: link clicks, sales, revenue, $ per click.
 // Live query, so the dashboard ticks in real time as clicks and sales land.
 export const videoStats = query({
   args: {},
   handler: async (ctx) => {
+    if (!(await getAuthUserId(ctx))) throw new Error("Not authenticated");
     const links = await ctx.db.query("links").collect();
     const clicks = await ctx.db.query("clicks").collect();
     const sales = await ctx.db.query("sales").collect();

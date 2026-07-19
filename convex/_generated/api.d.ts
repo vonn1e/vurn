@@ -9,7 +9,9 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as auth from "../auth.js";
 import type * as dashboard from "../dashboard.js";
+import type * as http from "../http.js";
 import type * as journeys from "../journeys.js";
 import type * as links from "../links.js";
 import type * as tracking from "../tracking.js";
@@ -22,7 +24,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  auth: typeof auth;
   dashboard: typeof dashboard;
+  http: typeof http;
   journeys: typeof journeys;
   links: typeof links;
   tracking: typeof tracking;
