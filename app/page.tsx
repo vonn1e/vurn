@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { AsciiArt } from "@/components/ui/test";
 
 const steps = [
@@ -60,6 +62,7 @@ const faqs = [
 ];
 
 export default function LandingPage() {
+  const seats = useQuery(api.beta.seats);
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top bar */}
@@ -235,6 +238,13 @@ export default function LandingPage() {
           >
             Join the free beta
           </Link>
+          {seats && (
+            <p className="mt-3 text-xs tabular-nums text-emerald-300/70">
+              {seats.claimed >= seats.total
+                ? `All ${seats.total} seats are taken — the next wave opens after this one ships.`
+                : `${seats.claimed} of ${seats.total} seats claimed`}
+            </p>
+          )}
         </div>
       </section>
 

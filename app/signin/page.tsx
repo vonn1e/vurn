@@ -1,8 +1,9 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
+import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { AsciiArt } from "@/components/ui/test";
 export default function SignInPage() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const seats = useQuery(api.beta.seats);
   const router = useRouter();
 
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
@@ -34,6 +36,8 @@ export default function SignInPage() {
     } catch (e) {
       if (e instanceof ConvexError && e.data === "invalid-invite-code") {
         setError("That invite code isn't right. Beta invites come from the founder — reply to your invite email if you lost yours.");
+      } else if (e instanceof ConvexError && e.data === "beta-full") {
+        setError("All beta seats are taken. The next wave opens after this one ships its testimonials.");
       } else {
         setError(
           flow === "signIn"
@@ -99,14 +103,23 @@ export default function SignInPage() {
               className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-emerald-400/60"
             />
             {flow === "signUp" && (
-              <input
-                type="text"
-                required
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Invite code"
-                className="w-full rounded-lg border border-emerald-400/25 bg-black/40 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-emerald-400/60"
-              />
+              <>
+                <input
+                  type="text"
+                  required
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="Invite code"
+                  className="w-full rounded-lg border border-emerald-400/25 bg-black/40 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-emerald-400/60"
+                />
+                {seats && (
+                  <p className="text-center text-xs tabular-nums text-emerald-300/70">
+                    {seats.claimed >= seats.total
+                      ? `All ${seats.total} beta seats are taken`
+                      : `${seats.claimed} of ${seats.total} beta seats claimed`}
+                  </p>
+                )}
+              </>
             )}
             {error && <p className="text-xs text-rose-400">{error}</p>}
             <button
